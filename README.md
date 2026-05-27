@@ -95,7 +95,7 @@ Live system metrics, cost trend chart, cost by team donut, and recent event feed
 | Marketing | \$1,366.20 | \$300/mo | 455% over — alert |
 | Data Science | \$592.90 | \$500/mo | 119% over — alert |
 
-![Overview](./assets/screenshots/01-overview.png)
+![Overview](./assets/screenshots/01-overview.jpg)
 
 ---
 
@@ -126,7 +126,7 @@ Track LLM spend across 10 models, 7 providers, and time.
 
 Features: cumulative area chart, model cost horizontal bars (color = provider), latency p50/p95/p99 per model, full model performance table.
 
-![Cost Analytics](./assets/screenshots/02-cost-analytics.png)
+![Cost Analytics](./assets/screenshots/02-cost-analytics.jpg)
 
 ---
 
@@ -142,7 +142,7 @@ Agent execution history with step-by-step trace correlation.
 
 Each run shows: per-node duration timeline, token count per step, model used, trace ID, output summary.
 
-![Agent Traces](./assets/screenshots/03-agent-traces.png)
+![Agent Traces](./assets/screenshots/03-agent-traces.jpg)
 
 ---
 
@@ -157,7 +157,7 @@ Human-in-the-loop approval queue for agent execution.
 
 Pending requests show: risk level (low / medium / high), estimated impact, model, tokens, cost. Approve or Reject — decision logged with approver identity and timestamp.
 
-![Approvals](./assets/screenshots/04-approvals.png)
+![Approvals](./assets/screenshots/04-approvals.jpg)
 
 ---
 
@@ -183,7 +183,7 @@ Z-score engine with threshold rules and real-time alerting.
 
 Each anomaly generates a 4-step AI remediation recommendation. Risk radar visualises pressure across 5 dimensions.
 
-![Anomaly Detection](./assets/screenshots/05-anomaly-detection.png)
+![Anomaly Detection](./assets/screenshots/05-anomaly-detection.jpg)
 
 ---
 
@@ -198,7 +198,7 @@ Top users by token consumption and cost.
 
 Rank-based color bars: gold for #1, fading gradient for lower ranks. Inline progress bar per user in table.
 
-![Users](./assets/screenshots/06-users.png)
+![Users](./assets/screenshots/06-users.jpg)
 
 ---
 
@@ -214,7 +214,7 @@ Configure teams, budgets, users, and access controls.
 | Customer Support | \$500 | \$0 | \$500.00 | ✅ Healthy |
 | Executive Strategy | \$1,500 | \$0 | \$1,500.00 | ✅ Healthy |
 
-![Team Management](./assets/screenshots/07-team-management.png)
+![Team Management](./assets/screenshots/07-team-management.jpg)
 
 ---
 
