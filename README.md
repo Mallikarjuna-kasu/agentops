@@ -1,4 +1,4 @@
-# Palyam IQ AgentOps
+# llm-observability-platform
 
 **Enterprise LLM Cost Governance Platform**
 
