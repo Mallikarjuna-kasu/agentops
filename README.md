@@ -1,19 +1,20 @@
-# AgentOps
+# PalyamIQ AgentOps
 
-**Enterprise LLM Cost Governance Prototype**
+**Enterprise LLM Cost Governance Platform**
 
-Multi-team LLM cost governance with approval-gated agent execution, real-time budget tracking, and full execution traceability.
+Multi-team LLM cost governance with approval-gated agent execution, real-time budget tracking, anomaly detection, and full execution traceability across 10 models and 7 providers.
 
 ---
 
 ## The Problem
 
 Enterprise teams share LLM API keys without spend controls.
-- Team A runs a $5 analysis.
-- Team B runs 500 of them overnight.
+
+- Team A runs a \$55 analysis job.
+- Team B runs a 120M-token batch overnight — \$4,500 in a single call.
 - Finance sees the bill Monday morning with zero attribution.
 
-No guardrails. No accountability.
+No guardrails. No accountability. No early warning.
 
 ---
 
@@ -21,11 +22,11 @@ No guardrails. No accountability.
 
 | Feature | Outcome |
 |---|---|
-| **Per-Team Budgets** | Each team has a monthly cost ceiling. |
-| **Approval Gates** | Over-budget or high-risk requests require explicit approval before execution. |
-| **Execution Tracing** | Every agent step is logged with latency, tokens, and cost. |
-| **Real-Time Dashboard** | Live spend tracking by team, model, provider, and time window. |
-| **Anomaly Detection** | Z-score engine flags cost spikes, latency spikes, token abuse, and high error rates. |
+| **Per-Team Budgets** | Each team has a monthly cost ceiling with real-time burn tracking |
+| **Approval Gates** | Over-budget or high-risk requests require explicit human approval before execution |
+| **Z-Score Anomaly Detection** | Automatically flags cost spikes, latency spikes, token abuse, and high error rates |
+| **Execution Tracing** | Every LangGraph agent step logged with latency, tokens, and cost per node |
+| **Real-Time Dashboard** | Live spend by team, model, provider, and time window across 10 LLMs |
 
 ---
 
@@ -33,63 +34,90 @@ No guardrails. No accountability.
 
 ```
 User Browser
-    |
-    v
-Dashboard UI (React + Vite + TypeScript)
-    |
-    v
+    │
+    ▼
+Dashboard UI (React + Vite + TypeScript + Recharts)
+    │
+    ▼
 Governance Backend (FastAPI + asyncpg)
-    |                           |
-    v                           v
-Budget Check              State & Budget Store
-    |                           |
-    v                           |
-Agent Orchestration <---------|
-(LangGraph: Research -> Critic -> Synthesis)
-    |
-    +------> Trace & Audit Store (Langfuse)
-    |
-    +------> Checkpoint Cache (Redis)
-    |
-    v
-Dashboard Update
+    │                           │
+    ▼                           ▼
+Budget Check              State & Budget Store (PostgreSQL)
+    │                           │
+    ▼                           │
+Agent Orchestration  ◄─────────┘
+(LangGraph: Research → Critic → Synthesis)
+    │
+    ├──► Trace & Audit Store (Langfuse — configurable)
+    │
+    ├──► Checkpoint Cache (Redis)
+    │
+    ▼
+Dashboard Update (real-time via polling)
 ```
 
-**Data Flow:** Request -> Auth -> Budget Check -> Agent Execution -> Trace -> Dashboard Update
+**Data Flow:** Request → Auth → Budget Check → [Approval Gate if over budget] → Agent Execution → Trace → Dashboard Update
+
+---
+
+## Live Demo Metrics
+
+> Numbers from the running POC with enterprise-scale seed data (44 events, 1.5B tokens)
+
+| Metric | Value |
+|---|---|
+| Total Requests | 44 |
+| Total Cost | **\$10,611.88** |
+| Avg Latency | 1,218ms |
+| Error Rate | 6.82% |
+| Total Tokens | 1,547,500,000 |
+| Models Tracked | 10 |
+| Providers | 7 |
 
 ---
 
 ## Dashboard Views
 
 ### 1. Overview
-Live system metrics and recent events.
+Live system metrics, cost trend chart, cost by team donut, and recent event feed.
 
-| Metric | Value (Demo) |
-|---|---|
-| Total Requests | 201 |
-| Total Cost | $7.6953 |
-| Avg Latency | 1176ms |
-| Error Rate | 6.97% |
-
-Tracks cost trends over time and lists recent agent runs with model, team, tokens, latency, cost, and status.
+| Team | Spend | Budget | Status |
+|---|---|---|---|
+| Engineering | \$6,067.40 | \$2,000/mo | 303% over — alert |
+| Operations | \$2,585.38 | \$800/mo | 323% over — alert |
+| Marketing | \$1,366.20 | \$300/mo | 455% over — alert |
+| Data Science | \$592.90 | \$500/mo | 119% over — alert |
 
 ![Overview](./assets/screenshots/01-overview.png)
 
 ---
 
 ### 2. Cost Analytics
-Track LLM spend across models, teams, and time.
+Track LLM spend across 10 models, 7 providers, and time.
 
-| Provider | Share |
+**Provider breakdown:**
+
+| Provider | Spend | Share |
+|---|---|---|
+| OpenAI | \$7,507.50 | 71% |
+| Mistral | \$1,435.50 | 14% |
+| Anthropic | \$759.90 | 7% |
+| Google | \$477.40 | 4% |
+| Meta | \$219.24 | 2% |
+| DeepSeek | \$166.14 | 2% |
+| Alibaba | \$46.20 | <1% |
+
+**Top models by cost:**
+
+| Model | Total Cost |
 |---|---|
-| OpenAI | 49% |
-| Anthropic | 27% |
-| Mistral | 12% |
-| Google | 6% |
-| Meta | 4% |
-| Alibaba | 2% |
+| gpt-5.5 | \$5,065.50 |
+| gpt-4o | \$2,442.00 |
+| mistral-large-3 | \$1,435.50 |
+| claude-opus-5 | \$585.00 |
+| gemini-3.1-pro | \$292.60 |
 
-Features cumulative cost trend, model cost comparison bar chart, and latency distribution.
+Features: cumulative area chart, model cost horizontal bars (color = provider), latency p50/p95/p99 per model, full model performance table.
 
 ![Cost Analytics](./assets/screenshots/02-cost-analytics.png)
 
@@ -98,13 +126,14 @@ Features cumulative cost trend, model cost comparison bar chart, and latency dis
 ### 3. Agent Traces
 LangGraph execution history with step-by-step trace correlation.
 
-| Status | Count |
-|---|---|
-| Completed | 2 |
-| Pending | 1 |
-| Failed | 1 |
+| Agent | Status | Model | Cost |
+|---|---|---|---|
+| Telemetry Analysis | Completed | gpt-4o | \$0.0312 |
+| Anomaly Detection | Completed | claude-sonnet-5 | \$0.0582 |
+| Recommendation | Awaiting Approval | claude-opus-5 | \$0.0954 |
+| Report Summarization | Failed | gemini-2.5-pro | \$0.0095 |
 
-Shows per-run duration, model, tokens, cost, and full execution log with node-level timing.
+Each run shows: per-node duration timeline, token count per step, model used, trace ID, output summary.
 
 ![Agent Traces](./assets/screenshots/03-agent-traces.png)
 
@@ -119,7 +148,7 @@ Human-in-the-loop approval queue for agent execution.
 | Approved | 4 |
 | Rejected | 2 |
 
-Pending requests show risk level (medium/low), estimated tokens, cost, and Approve/Reject actions. Approval history tracks all decisions with timestamp and approver.
+Pending requests show: risk level (low / medium / high), estimated impact, model, tokens, cost. Approve or Reject — decision logged with approver identity and timestamp.
 
 ![Approvals](./assets/screenshots/04-approvals.png)
 
@@ -130,12 +159,22 @@ Z-score engine with threshold rules and real-time alerting.
 
 | Metric | Value |
 |---|---|
-| Total Anomalies | 30 |
-| Critical | 24 |
-| High | 6 |
-| Events Scanned | 201 |
+| Total Anomalies | 16 |
+| Critical (>3σ) | 12 |
+| High (>2σ) | 4 |
+| Events Scanned | 44 |
 
-Detects cost spikes, latency spikes, token abuse, and high error rates. Risk radar visualizes anomaly pressure by dimension.
+**Anomalies detected in demo data:**
+
+| Event | Type | z-score | Cost |
+|---|---|---|---|
+| gpt-5.5 · 165M tokens | Cost Spike | 5.8σ | \$4,500 |
+| gpt-4o · 280M tokens | Cost Spike | 4.2σ | \$2,200 |
+| claude-opus-5 · 6,800ms | Latency Spike | 4.9σ | \$180 |
+| llama-3.3-70b · 210M tokens | Token Abuse | 6.1σ | \$189 |
+| mistral-large-3 · 280M tokens | Cost Spike | 3.4σ | \$1,320 |
+
+Each anomaly generates a 4-step AI remediation recommendation. Risk radar visualises pressure across 5 dimensions.
 
 ![Anomaly Detection](./assets/screenshots/05-anomaly-detection.png)
 
@@ -146,9 +185,11 @@ Top users by token consumption and cost.
 
 | Rank | User | Team | Tokens | Cost | Calls |
 |---|---|---|---|---|---|
-| #1 | Kasu Mallikarjuna | Engineering | 772,770 | $3.7022 | 70 |
-| #2 | Alex Kumar | Marketing | 247,180 | $0.2189 | 13 |
-| #3 | Lisa Zhang | Marketing | 145,428 | $0.9345 | 13 |
+| 🥇 #1 | Kasu Mallikarjuna | Engineering | 424M+ | \$2.11+ | 15 |
+| #2 | Alex Kumar | Marketing | — | — | — |
+| #3 | Lisa Zhang | Marketing | — | — | — |
+
+Rank-based color bars: gold for #1, fading gradient for lower ranks. Inline progress bar per user in table.
 
 ![Users](./assets/screenshots/06-users.png)
 
@@ -157,24 +198,50 @@ Top users by token consumption and cost.
 ### 7. Team Management
 Configure teams, budgets, users, and access controls.
 
-| Team | Monthly Budget | Spent This Month | Remaining | Status |
+| Team | Monthly Budget | Spent | Remaining | Status |
 |---|---|---|---|---|
-| Marketing | $300.00 | $0.1284 | $299.8716 | Healthy |
-| Customer Support | $500.00 | $0.0000 | $500.0000 | Healthy |
-| Executive Strategy | $1500.00 | $0.0000 | $1500.0000 | Healthy |
-| Engineering | $2000.00 | $5.8530 | $1994.1470 | Healthy |
+| Engineering | \$2,000 | \$6,067.40 | -\$4,067.40 | ⚠ Over budget |
+| Operations | \$800 | \$2,585.38 | -\$1,785.38 | ⚠ Over budget |
+| Marketing | \$300 | \$1,366.20 | -\$1,066.20 | ⚠ Over budget |
+| Data Science | \$500 | \$592.90 | -\$92.90 | ⚠ Over budget |
+| Customer Support | \$500 | \$0 | \$500.00 | ✅ Healthy |
+| Executive Strategy | \$1,500 | \$0 | \$1,500.00 | ✅ Healthy |
 
 ![Team Management](./assets/screenshots/07-team-management.png)
 
 ---
 
-## Use Case and Workflow
+## Tech Stack
 
-See [USECASE.md](./USECASE.md) for the full business scenario.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Tailwind CSS, Recharts |
+| Backend | FastAPI (Python), LangGraph agent orchestration |
+| Database | PostgreSQL — `DECIMAL(12,6)` cost, `INTEGER` token columns |
+| Cache | Redis |
+| Auth | JWT |
+| Observability | Langfuse (optional — enable via env vars) |
+| Infra | Docker Compose |
 
-## Inputs and Results
+---
 
-See [INPUTS-RESULTS.md](./INPUTS-RESULTS.md) for example inputs and system outputs.
+## Key Design Decisions
+
+**Metadata-only, never payloads.** Token counts, costs, latency, model names — yes. Actual prompt or completion text — never. Privacy-first by architecture.
+
+**Z-score over fixed thresholds.** Static thresholds break as usage scales. Z-score detection adapts to your baseline — a \$0.05 call can be anomalous if the mean is \$0.001. Or a \$200 call can be normal if batch jobs run daily.
+
+**Human-in-the-loop before consequential actions.** AI agents do not auto-execute recommendations. Every proposed action is queued for human approval with risk classification and estimated impact.
+
+**Real per-token pricing.** Seed data uses 2025/2026 published API rates (gpt-5.5: \$15/\$60 per 1M tokens, claude-opus-5: \$15/\$75 per 1M, etc.) so cost figures reflect enterprise reality.
+
+---
+
+## Docs
+
+- [Use Case & Workflow](./USECASE.md)
+- [Example Inputs & Results](./INPUTS-RESULTS.md)
+- [Architecture Detail](./ARCHITECTURE.md)
 
 ---
 
