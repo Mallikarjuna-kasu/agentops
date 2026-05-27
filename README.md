@@ -25,7 +25,7 @@ No guardrails. No accountability. No early warning.
 | **Per-Team Budgets** | Each team has a monthly cost ceiling with real-time burn tracking |
 | **Approval Gates** | Over-budget or high-risk requests require explicit human approval before execution |
 | **Z-Score Anomaly Detection** | Automatically flags cost spikes, latency spikes, token abuse, and high error rates |
-| **Execution Tracing** | Every LangGraph agent step logged with latency, tokens, and cost per node |
+| **Execution Tracing** | Every agent step logged with latency, tokens, and cost per node |
 | **Real-Time Dashboard** | Live spend by team, model, provider, and time window across 10 LLMs |
 
 ---
@@ -33,27 +33,34 @@ No guardrails. No accountability. No early warning.
 ## Architecture
 
 ```
-User Browser
-    │
-    ▼
-Dashboard UI (React + Vite + TypeScript + Recharts)
-    │
-    ▼
-Governance Backend (FastAPI + asyncpg)
-    │                           │
-    ▼                           ▼
-Budget Check              State & Budget Store (PostgreSQL)
-    │                           │
-    ▼                           │
-Agent Orchestration  ◄─────────┘
-(LangGraph: Research → Critic → Synthesis)
-    │
-    ├──► Trace & Audit Store (Langfuse — configurable)
-    │
-    ├──► Checkpoint Cache (Redis)
-    │
-    ▼
-Dashboard Update (real-time via polling)
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  User Interface  │────▶│  Governance     │────▶│  State & Budget │
+│  (Dashboard)     │     │  Backend        │     │  Store          │
+│                  │◄────│                 │◄────│                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                │
+                                ▼
+                         ┌─────────────────┐
+                         │  Agent          │
+                         │  Orchestration  │
+                         │  Engine         │
+                         │                 │
+                         │  • Research     │
+                         │  • Critic       │
+                         │  • Synthesis    │
+                         └─────────────────┘
+                                │
+                                ▼
+                         ┌─────────────────┐
+                         │  Trace & Audit  │
+                         │  Store          │
+                         └─────────────────┘
+                                │
+                                ▼
+                         ┌─────────────────┐
+                         │  Checkpoint     │
+                         │  Cache          │
+                         └─────────────────┘
 ```
 
 **Data Flow:** Request → Auth → Budget Check → [Approval Gate if over budget] → Agent Execution → Trace → Dashboard Update
@@ -124,7 +131,7 @@ Features: cumulative area chart, model cost horizontal bars (color = provider), 
 ---
 
 ### 3. Agent Traces
-LangGraph execution history with step-by-step trace correlation.
+Agent execution history with step-by-step trace correlation.
 
 | Agent | Status | Model | Cost |
 |---|---|---|---|
@@ -208,20 +215,6 @@ Configure teams, budgets, users, and access controls.
 | Executive Strategy | \$1,500 | \$0 | \$1,500.00 | ✅ Healthy |
 
 ![Team Management](./assets/screenshots/07-team-management.png)
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, TypeScript, Tailwind CSS, Recharts |
-| Backend | FastAPI (Python), LangGraph agent orchestration |
-| Database | PostgreSQL — `DECIMAL(12,6)` cost, `INTEGER` token columns |
-| Cache | Redis |
-| Auth | JWT |
-| Observability | Langfuse (optional — enable via env vars) |
-| Infra | Docker Compose |
 
 ---
 
