@@ -1,4 +1,4 @@
-# AgentOps
+# Palyam IQ AgentOps
 
 **Enterprise LLM Cost Governance Platform**
 
